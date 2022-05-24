@@ -1,0 +1,24 @@
+# Data folder with resources
+/data/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+build/
+dist/
+sdist/
+*.egg-info/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# VSCode
+.VSCode/
+
+images_for_inspection/
+images_for_inspection-bak/
+
+pytorch_models/

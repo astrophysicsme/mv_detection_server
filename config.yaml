@@ -1,0 +1,2 @@
+port: 8080
+images_directory: "images_for_inspection"
