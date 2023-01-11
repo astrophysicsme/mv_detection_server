@@ -1,12 +1,12 @@
 import torch
 from torch.utils.data import DataLoader
 import numpy as np
-from lib._C import nms
 
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from fastapi import status
 from pydantic import BaseModel
+from torchvision.ops import nms
 
 from bootstrap import loaded_models
 import lib.dataset.dataset_factory as dataset_factory
@@ -32,42 +32,42 @@ def calc_iou(gt_bbox, pred_bbox):
     This function takes the predicted bounding box and ground truth bounding box and
     return the IoU ratio
     """
-    x_topleft_gt, y_topleft_gt, x_bottomright_gt, y_bottomright_gt = gt_bbox
-    x_topleft_p, y_topleft_p, x_bottomright_p, y_bottomright_p = pred_bbox
+    x_top_left_gt, y_top_left_gt, x_bottom_right_gt, y_bottom_right_gt = gt_bbox
+    x_top_left_p, y_top_left_p, x_bottom_right_p, y_bottom_right_p = pred_bbox
 
-    if (x_topleft_gt > x_bottomright_gt) or (y_topleft_gt > y_bottomright_gt):
+    if (x_top_left_gt > x_bottom_right_gt) or (y_top_left_gt > y_bottom_right_gt):
         raise AssertionError("Ground Truth Bounding Box is not correct")
-    if (x_topleft_p > x_bottomright_p) or (y_topleft_p > y_bottomright_p):
-        raise AssertionError("Predicted Bounding Box is not correct", x_topleft_p, x_bottomright_p, y_topleft_p,
-                             y_bottomright_gt)
+    if (x_top_left_p > x_bottom_right_p) or (y_top_left_p > y_bottom_right_p):
+        raise AssertionError("Predicted Bounding Box is not correct", x_top_left_p, y_bottom_right_p, y_top_left_p,
+                             y_bottom_right_gt)
 
-    # if the GT bbox and predcited BBox do not overlap then iou=0
+    # if the GT bbox and predicted BBox do not overlap then iou=0
     # If bottom right of x-coordinate GT bbox is less than or above the top left of x coordinate of the predicted BBox
-    if x_bottomright_gt < x_topleft_p:
+    if x_bottom_right_gt < x_top_left_p:
         return 0.0
     # If bottom right of y-coordinate GT bbox is less than or above the top left of y coordinate of the predicted BBox
-    if y_bottomright_gt < y_topleft_p:
+    if y_bottom_right_gt < y_top_left_p:
         return 0.0
     # If bottom right of x-coordinate GT bbox is greater than or below the bottom right of x coordinate of
-    # the predcited BBox
-    if x_topleft_gt > x_bottomright_p:
+    # the predicted BBox
+    if x_top_left_gt > x_bottom_right_p:
         return 0.0
     # If bottom right of y-coordinate GT bbox is greater than or below the bottom right of y coordinate of
-    # the predcited BBox
-    if y_topleft_gt > y_bottomright_p:
+    # the predicted BBox
+    if y_top_left_gt > y_bottom_right_p:
         return 0.0
 
-    gt_bbox_area = (x_bottomright_gt - x_topleft_gt + 1) * (y_bottomright_gt - y_topleft_gt + 1)
-    pred_bbox_area = (x_bottomright_p - x_topleft_p + 1) * (y_bottomright_p - y_topleft_p + 1)
+    gt_bbox_area = (x_bottom_right_gt - x_top_left_gt + 1) * (y_bottom_right_gt - y_top_left_gt + 1)
+    predicted_bbox_area = (x_bottom_right_p - x_top_left_p + 1) * (y_bottom_right_p - y_top_left_p + 1)
 
-    x_top_left = np.max([x_topleft_gt, x_topleft_p])
-    y_top_left = np.max([y_topleft_gt, y_topleft_p])
-    x_bottom_right = np.min([x_bottomright_gt, x_bottomright_p])
-    y_bottom_right = np.min([y_bottomright_gt, y_bottomright_p])
+    x_top_left = np.max([x_top_left_gt, x_top_left_p])
+    y_top_left = np.max([y_top_left_gt, y_top_left_p])
+    x_bottom_right = np.min([x_bottom_right_gt, x_bottom_right_p])
+    y_bottom_right = np.min([y_bottom_right_gt, y_bottom_right_p])
 
     intersection_area = (x_bottom_right - x_top_left + 1) * (y_bottom_right - y_top_left + 1)
 
-    union_area = (gt_bbox_area + pred_bbox_area - intersection_area)
+    union_area = (gt_bbox_area + predicted_bbox_area - intersection_area)
 
     return intersection_area / union_area
 
@@ -298,7 +298,7 @@ def inspect_single_image():
                     keep = nms(cls_boxes, cls_scores, cfg.TEST.NMS)
                     detected_class = detected_class[keep.view(-1).long()]
 
-                    score_threshold = 0.8
+                    score_threshold = cfg.SERVER.SINGLE_MODEL_THRESHOLD
                     use_det = detected_class.cpu().numpy()
                     if use_det.shape[0] < 10:
                         use_det = astro_nms(use_det, 0.3)

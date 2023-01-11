@@ -16,7 +16,8 @@ sdist/
 .ipynb_checkpoints
 
 # VSCode
-.VSCode/
+.vscode/
+.idea/
 
 images_for_inspection/
 images_for_inspection-bak/

@@ -1,2 +1,4 @@
 port: 8080
 images_directory: "images_for_inspection"
+
+single_model_threshold: 0.8
