@@ -109,3 +109,9 @@ where *$EPOCH* is early saved checkpoint epoch (maximum =10 for training example
 After detect, you will find the detection results in folder `dataT/images/result` folder.
 
 For more information about detect script, you need to run `python run.py detect -h` and follow help message.
+
+
+
+https://discuss.pytorch.org/t/from-torch-c-import-no-torch-c/68291/3
+https://github.com/pytorch/pytorch/issues/4518
+https://github.com/loolzaaa/faster-rcnn-pytorch

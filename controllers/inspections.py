@@ -243,6 +243,14 @@ def calculate_nms(bounding_boxes, nt):
     return np.array(picked_boxes)
 
 
+def add_or_append_dict(idx, box, boxes):
+    if str(idx) not in boxes.keys():
+        boxes[str(idx)] = []
+
+    if box not in boxes[str(idx)]:
+        boxes[str(idx)].append(box)
+
+
 def inspect_single_image():
     assert len(loaded_models) != 0
 
@@ -298,7 +306,7 @@ def inspect_single_image():
                     keep = nms(cls_boxes, cls_scores, cfg.TEST.NMS)
                     detected_class = detected_class[keep.view(-1).long()]
 
-                    score_threshold = cfg.SERVER.SINGLE_MODEL_THRESHOLD
+                    score_threshold = cfg.SERVER.MODEL_THRESHOLD
                     use_det = detected_class.cpu().numpy()
                     if use_det.shape[0] < 10:
                         use_det = astro_nms(use_det, 0.3)
@@ -314,14 +322,14 @@ def inspect_single_image():
 
     voting_threshold = int(0.4 * len(loaded_models))
 
-    combined_results = {}
+    combined_res = {}
     pallet_name = ""
 
     for file_name in results:
         file_id, view_id = file_name.split('v')
         pallet_name = file_id
 
-        combined_results[view_id] = []
+        combined_res[view_id] = []
 
         result = astro_collect(results[file_name], nt=0.1)
         for j in result:
@@ -333,7 +341,7 @@ def inspect_single_image():
                 combined_y2 = combined_boxes[:, 5].astype(int).sum(0) / len(result[j])
                 combined_score = combined_boxes[:, 6].astype(float).sum(0) / len(result[j])
 
-                combined_results[view_id].append(jsonable_encoder(
+                combined_res[view_id].append(jsonable_encoder(
                     BoundingBox(x1=combined_x1, y1=combined_y1, x2=combined_x2, y2=combined_y2,
                                 score=combined_score, threat_id=combined_boxes[0][7],
                                 threat_category=combined_boxes[0][8])))
@@ -342,103 +350,162 @@ def inspect_single_image():
         "id": pallet_name,
         "Views": []
     }
-    start_views_position = 1
+    # start_views_position = 1
+    # for optimized_view_id in range(0, len(combined_res), cfg.SERVER.VIEWS_PER_PASS):
+    #     end_views_position = start_views_position + cfg.SERVER.VIEWS_PER_PASS
+    #     numbers = [k for k in range(start_views_position, end_views_position)]
+    #     start_views_position += cfg.SERVER.VIEWS_PER_PASS
+    #
+    #     pass_boxes = {}
+    #
+    #     for box in check_consecutive_views(combined_res[str(numbers[0])], combined_res[str(numbers[1])],
+    #                                        combined_res[str(numbers[2])]):
+    #         if str(numbers[0]) not in pass_boxes.keys():
+    #             pass_boxes[str(numbers[0])] = []
+    #
+    #         if box not in pass_boxes[str(numbers[0])]:
+    #             pass_boxes[str(numbers[0])].append(box)
+    #     for box in check_consecutive_views(combined_res[str(numbers[1])], combined_res[str(numbers[0])],
+    #                                        combined_res[str(numbers[2])]):
+    #         if str(numbers[1]) not in pass_boxes.keys():
+    #             pass_boxes[str(numbers[1])] = []
+    #
+    #         if box not in pass_boxes[str(numbers[1])]:
+    #             pass_boxes[str(numbers[1])].append(box)
+    #     for box in check_consecutive_views(combined_res[str(numbers[1])], combined_res[str(numbers[2])],
+    #                                        combined_res[str(numbers[3])]):
+    #         if str(numbers[1]) not in pass_boxes.keys():
+    #             pass_boxes[str(numbers[1])] = []
+    #
+    #         if box not in pass_boxes[str(numbers[1])]:
+    #             pass_boxes[str(numbers[1])].append(box)
+    #     for box in check_consecutive_views(combined_res[str(numbers[2])], combined_res[str(numbers[0])],
+    #                                        combined_res[str(numbers[1])]):
+    #         if str(numbers[2]) not in pass_boxes.keys():
+    #             pass_boxes[str(numbers[2])] = []
+    #         if box not in pass_boxes[str(numbers[2])]:
+    #             pass_boxes[str(numbers[2])].append(box)
+    #     for box in check_consecutive_views(combined_res[str(numbers[2])], combined_res[str(numbers[1])],
+    #                                        combined_res[str(numbers[3])]):
+    #         if str(numbers[2]) not in pass_boxes.keys():
+    #             pass_boxes[str(numbers[2])] = []
+    #
+    #         if box not in pass_boxes[str(numbers[2])]:
+    #             pass_boxes[str(numbers[2])].append(box)
+    #     for box in check_consecutive_views(combined_res[str(numbers[2])], combined_res[str(numbers[3])],
+    #                                        combined_res[str(numbers[4])]):
+    #         if str(numbers[2]) not in pass_boxes.keys():
+    #             pass_boxes[str(numbers[2])] = []
+    #
+    #         if box not in pass_boxes[str(numbers[2])]:
+    #             pass_boxes[str(numbers[2])].append(box)
+    #     for box in check_consecutive_views(combined_res[str(numbers[3])], combined_res[str(numbers[1])],
+    #                                        combined_res[str(numbers[2])]):
+    #         if str(numbers[3]) not in pass_boxes.keys():
+    #             pass_boxes[str(numbers[3])] = []
+    #
+    #         if box not in pass_boxes[str(numbers[3])]:
+    #             pass_boxes[str(numbers[3])].append(box)
+    #     for box in check_consecutive_views(combined_res[str(numbers[3])], combined_res[str(numbers[2])],
+    #                                        combined_res[str(numbers[4])]):
+    #         if str(numbers[3]) not in pass_boxes.keys():
+    #             pass_boxes[str(numbers[3])] = []
+    #
+    #         if box not in pass_boxes[str(numbers[3])]:
+    #             pass_boxes[str(numbers[3])].append(box)
+    #     for box in check_consecutive_views(combined_res[str(numbers[3])], combined_res[str(numbers[4])],
+    #                                        combined_res[str(numbers[5])]):
+    #         if str(numbers[3]) not in pass_boxes.keys():
+    #             pass_boxes[str(numbers[3])] = []
+    #
+    #         if box not in pass_boxes[str(numbers[3])]:
+    #             pass_boxes[str(numbers[3])].append(box)
+    #     for box in check_consecutive_views(combined_res[str(numbers[4])], combined_res[str(numbers[2])],
+    #                                        combined_res[str(numbers[3])]):
+    #         if str(numbers[4]) not in pass_boxes.keys():
+    #             pass_boxes[str(numbers[4])] = []
+    #
+    #         if box not in pass_boxes[str(numbers[4])]:
+    #             pass_boxes[str(numbers[4])].append(box)
+    #     for box in check_consecutive_views(combined_res[str(numbers[4])], combined_res[str(numbers[3])],
+    #                                        combined_res[str(numbers[5])]):
+    #         if str(numbers[4]) not in pass_boxes.keys():
+    #             pass_boxes[str(numbers[4])] = []
+    #
+    #         if box not in pass_boxes[str(numbers[4])]:
+    #             pass_boxes[str(numbers[4])].append(box)
+    #     for box in check_consecutive_views(combined_res[str(numbers[5])], combined_res[str(numbers[3])],
+    #                                        combined_res[str(numbers[4])]):
+    #         if str(numbers[5]) not in pass_boxes.keys():
+    #             pass_boxes[str(numbers[5])] = []
+    #
+    #         if box not in pass_boxes[str(numbers[5])]:
+    #             pass_boxes[str(numbers[5])].append(box)
+    #
+    #     for key in pass_boxes:
+    #         optimized_results["Views"].append({
+    #             "viewid": int(key),
+    #             "Box": pass_boxes[key]
+    #         })
 
-    for optimized_view_id in range(0, len(combined_results), cfg.SERVER.VIEWS_PER_PASS):
+    for pass_number in range(0, cfg.SERVER.NUMBER_OF_PASSES):
+        start_views_position = pass_number * cfg.SERVER.VIEWS_PER_PASS + 1
         end_views_position = start_views_position + cfg.SERVER.VIEWS_PER_PASS
-        numbers = [k for k in range(start_views_position, end_views_position)]
+        for view_number in range(start_views_position, end_views_position):
+            pass_boxes = {}
+            if view_number == start_views_position:
+                for box in check_consecutive_views(combined_res[str(view_number)], combined_res[str(view_number + 1)],
+                                                   combined_res[str(view_number + 2)]):
+                    add_or_append_dict(view_number, box, pass_boxes)
+            elif view_number == (start_views_position + 1):
+                if view_number + 1 <= end_views_position - 1:
+                    for box in check_consecutive_views(combined_res[str(view_number)],
+                                                       combined_res[str(view_number - 1)],
+                                                       combined_res[str(view_number + 1)]):
+                        add_or_append_dict(view_number, box, pass_boxes)
+
+                if view_number + 2 <= end_views_position - 1:
+                    for box in check_consecutive_views(combined_res[str(view_number)],
+                                                       combined_res[str(view_number + 1)],
+                                                       combined_res[str(view_number + 2)]):
+                        add_or_append_dict(view_number, box, pass_boxes)
+            elif (start_views_position + 1) < view_number < (end_views_position - 2):
+                for box in check_consecutive_views(combined_res[str(view_number)], combined_res[str(view_number - 2)],
+                                                   combined_res[str(view_number - 1)]):
+                    add_or_append_dict(view_number, box, pass_boxes)
+
+                if view_number + 1 <= end_views_position - 1:
+                    for box in check_consecutive_views(combined_res[str(view_number)],
+                                                       combined_res[str(view_number - 1)],
+                                                       combined_res[str(view_number + 1)]):
+                        add_or_append_dict(view_number, box, pass_boxes)
+
+                if view_number + 2 <= end_views_position + 1:
+                    for box in check_consecutive_views(combined_res[str(view_number)],
+                                                       combined_res[str(view_number + 1)],
+                                                       combined_res[str(view_number + 2)]):
+                        add_or_append_dict(view_number, box, pass_boxes)
+            elif view_number == (end_views_position - 2):
+                for box in check_consecutive_views(combined_res[str(view_number)], combined_res[str(view_number - 2)],
+                                                   combined_res[str(view_number - 1)]):
+                    add_or_append_dict(view_number, box, pass_boxes)
+
+                if view_number + 1 <= end_views_position + 1:
+                    for box in check_consecutive_views(combined_res[str(view_number)],
+                                                       combined_res[str(view_number - 1)],
+                                                       combined_res[str(view_number + 1)]):
+                        add_or_append_dict(view_number, box, pass_boxes)
+            elif view_number == (end_views_position - 1):
+                for box in check_consecutive_views(combined_res[str(view_number)], combined_res[str(view_number - 2)],
+                                                   combined_res[str(view_number - 1)]):
+                    add_or_append_dict(view_number, box, pass_boxes)
+
+            for key in pass_boxes:
+                optimized_results["Views"].append({
+                    "viewid": int(key),
+                    "Box": pass_boxes[key]
+                })
+
         start_views_position += cfg.SERVER.VIEWS_PER_PASS
-
-        pass_boxes = {}
-
-        for box in check_consecutive_views(combined_results[str(numbers[0])], combined_results[str(numbers[1])],
-                                           combined_results[str(numbers[2])]):
-            if str(numbers[0]) not in pass_boxes.keys():
-                pass_boxes[str(numbers[0])] = []
-
-            if box not in pass_boxes[str(numbers[0])]:
-                pass_boxes[str(numbers[0])].append(box)
-        for box in check_consecutive_views(combined_results[str(numbers[1])], combined_results[str(numbers[0])],
-                                           combined_results[str(numbers[2])]):
-            if str(numbers[1]) not in pass_boxes.keys():
-                pass_boxes[str(numbers[1])] = []
-
-            if box not in pass_boxes[str(numbers[1])]:
-                pass_boxes[str(numbers[1])].append(box)
-        for box in check_consecutive_views(combined_results[str(numbers[1])], combined_results[str(numbers[2])],
-                                           combined_results[str(numbers[3])]):
-            if str(numbers[1]) not in pass_boxes.keys():
-                pass_boxes[str(numbers[1])] = []
-
-            if box not in pass_boxes[str(numbers[1])]:
-                pass_boxes[str(numbers[1])].append(box)
-        for box in check_consecutive_views(combined_results[str(numbers[2])], combined_results[str(numbers[0])],
-                                           combined_results[str(numbers[1])]):
-            if str(numbers[2]) not in pass_boxes.keys():
-                pass_boxes[str(numbers[2])] = []
-            if box not in pass_boxes[str(numbers[2])]:
-                pass_boxes[str(numbers[2])].append(box)
-        for box in check_consecutive_views(combined_results[str(numbers[2])], combined_results[str(numbers[1])],
-                                           combined_results[str(numbers[3])]):
-            if str(numbers[2]) not in pass_boxes.keys():
-                pass_boxes[str(numbers[2])] = []
-
-            if box not in pass_boxes[str(numbers[2])]:
-                pass_boxes[str(numbers[2])].append(box)
-        for box in check_consecutive_views(combined_results[str(numbers[2])], combined_results[str(numbers[3])],
-                                           combined_results[str(numbers[4])]):
-            if str(numbers[2]) not in pass_boxes.keys():
-                pass_boxes[str(numbers[2])] = []
-
-            if box not in pass_boxes[str(numbers[2])]:
-                pass_boxes[str(numbers[2])].append(box)
-        for box in check_consecutive_views(combined_results[str(numbers[3])], combined_results[str(numbers[1])],
-                                           combined_results[str(numbers[2])]):
-            if str(numbers[3]) not in pass_boxes.keys():
-                pass_boxes[str(numbers[3])] = []
-
-            if box not in pass_boxes[str(numbers[3])]:
-                pass_boxes[str(numbers[3])].append(box)
-        for box in check_consecutive_views(combined_results[str(numbers[3])], combined_results[str(numbers[2])],
-                                           combined_results[str(numbers[4])]):
-            if str(numbers[3]) not in pass_boxes.keys():
-                pass_boxes[str(numbers[3])] = []
-
-            if box not in pass_boxes[str(numbers[3])]:
-                pass_boxes[str(numbers[3])].append(box)
-        for box in check_consecutive_views(combined_results[str(numbers[3])], combined_results[str(numbers[4])],
-                                           combined_results[str(numbers[5])]):
-            if str(numbers[3]) not in pass_boxes.keys():
-                pass_boxes[str(numbers[3])] = []
-
-            if box not in pass_boxes[str(numbers[3])]:
-                pass_boxes[str(numbers[3])].append(box)
-        for box in check_consecutive_views(combined_results[str(numbers[4])], combined_results[str(numbers[2])],
-                                           combined_results[str(numbers[3])]):
-            if str(numbers[4]) not in pass_boxes.keys():
-                pass_boxes[str(numbers[4])] = []
-
-            if box not in pass_boxes[str(numbers[4])]:
-                pass_boxes[str(numbers[4])].append(box)
-        for box in check_consecutive_views(combined_results[str(numbers[4])], combined_results[str(numbers[3])],
-                                           combined_results[str(numbers[5])]):
-            if str(numbers[4]) not in pass_boxes.keys():
-                pass_boxes[str(numbers[4])] = []
-
-            if box not in pass_boxes[str(numbers[4])]:
-                pass_boxes[str(numbers[4])].append(box)
-        for box in check_consecutive_views(combined_results[str(numbers[5])], combined_results[str(numbers[3])],
-                                           combined_results[str(numbers[4])]):
-            if str(numbers[5]) not in pass_boxes.keys():
-                pass_boxes[str(numbers[5])] = []
-
-            if box not in pass_boxes[str(numbers[5])]:
-                pass_boxes[str(numbers[5])].append(box)
-
-        for key in pass_boxes:
-            optimized_results["Views"].append({
-                "viewid": int(key),
-                "Box": pass_boxes[key]
-            })
 
     return JSONResponse(status_code=status.HTTP_200_OK, content={"Scan": jsonable_encoder(optimized_results)})

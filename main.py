@@ -14,6 +14,6 @@ app.debug = cfg.SERVER.DEBUG
 
 app.include_router(pages.router)
 
-# pyinstaller -D --noconsole --noconfirm main.spec
+# pyinstaller --noconfirm main.spec
 if __name__ == "__main__":
     uvicorn.run(app, host="localhost", port=cfg.SERVER.PORT)

@@ -19,7 +19,9 @@ sdist/
 .vscode/
 .idea/
 
+images_for_inspection_bak/
+images_for_inspection_vi3d/
+images_for_inspection_vi3d_2/
 images_for_inspection/
-images_for_inspection-bak/
 
 pytorch_models/

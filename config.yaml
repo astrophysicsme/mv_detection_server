@@ -1,4 +1,6 @@
-port: 8080
+port: 7080
 images_directory: "images_for_inspection"
 
-single_model_threshold: 0.8
+views_per_pass: 6  # int >= 1
+number_of_passes: 5  # int >= 1
+model_threshold: 0.8
