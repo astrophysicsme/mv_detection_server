@@ -23,5 +23,7 @@ images_for_inspection_bak/
 images_for_inspection_vi3d/
 images_for_inspection_vi3d_2/
 images_for_inspection/
+images_for_inspection_single_view/
+images_for_inspection_dual_view/
 
 pytorch_models/

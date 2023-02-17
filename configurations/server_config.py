@@ -11,7 +11,7 @@ cfg = EasyDict()
 
 cfg.SERVER = EasyDict()
 cfg.SERVER.PORT = yaml_file["port"]
-cfg.SERVER.VERSION = "1.1.0"
+cfg.SERVER.VERSION = "1.2.0"
 cfg.SERVER.TITLE = "MV Detection Server"
 cfg.SERVER.DEBUG = True
 cfg.SERVER.MODELS_PATH = "./pytorch_models"
